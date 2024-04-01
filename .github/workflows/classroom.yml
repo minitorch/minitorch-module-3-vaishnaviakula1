@@ -1,0 +1,50 @@
+name: Autograding Tests
+'on':
+- push
+- workflow_dispatch
+- repository_dispatch
+permissions:
+  checks: write
+  actions: read
+  contents: read
+jobs:
+  run-autograding-tests:
+    runs-on: ubuntu-latest
+    if: github.actor != 'github-classroom[bot]'
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    - name: Style
+      id: style
+      uses: education/autograding-command-grader@v1
+      with:
+        test-name: Style
+        setup-command: sudo -H pip3 install -qr requirements.txt; sudo -H pip3 install
+          darglint==1.8.0; sudo -H pip3 install flake8==5.0.4
+        command: flake8 --ignore "N801, E203, E266, E501, W503, F812, E741, N803,
+          N802, N806" minitorch/ tests/ project/; mypy minitorch/*
+        timeout: 10
+    - name: Task 3.1
+      id: task-3-1
+      uses: education/autograding-command-grader@v1
+      with:
+        test-name: Task 3.1
+        setup-command: sudo -H pip3 install -qr requirements.txt
+        command: pytest -m task3_1
+        timeout: 10
+    - name: Task 3.2
+      id: task-3-2
+      uses: education/autograding-command-grader@v1
+      with:
+        test-name: Task 3.2
+        setup-command: sudo -H pip3 install -qr requirements.txt
+        command: pytest -m task3_2
+        timeout: 10
+    - name: Autograding Reporter
+      uses: education/autograding-grading-reporter@v1
+      env:
+        STYLE_RESULTS: "${{steps.style.outputs.result}}"
+        TASK-3-1_RESULTS: "${{steps.task-3-1.outputs.result}}"
+        TASK-3-2_RESULTS: "${{steps.task-3-2.outputs.result}}"
+      with:
+        runners: style,task-3-1,task-3-2
